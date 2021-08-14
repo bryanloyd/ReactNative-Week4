@@ -1,10 +1,11 @@
 import React, { Component } from "react";
 import Home from "./HomeComponent";
 import Directory from "./DirectoryComponent";
-import CampsiteInfo from "./CampsiteInfoComponent";
 import About from "./AboutComponent";
 import Contact from "./ContactComponent";
 import Reservation from "./ReservationComponent";
+import CampsiteInfo from "./CampsiteInfoComponent";
+import Constants from "expo-constants";
 import Favorites from "./FavoritesComponent";
 import Login from "./LoginComponent";
 import {
@@ -17,11 +18,9 @@ import {
   Alert,
   ToastAndroid,
 } from "react-native";
-import {
-  createStackNavigator,
-  createDrawerNavigator,
-  DrawerItems,
-} from "react-navigation";
+import { createStackNavigator } from "react-navigation-stack";
+import { createDrawerNavigator, DrawerItems } from "react-navigation-drawer";
+import { createAppContainer } from "react-navigation";
 import { Icon } from "react-native-elements";
 import SafeAreaView from "react-native-safe-area-view";
 import { connect } from "react-redux";
@@ -39,31 +38,6 @@ const mapDispatchToProps = {
   fetchPromotions,
   fetchPartners,
 };
-
-const LoginNavigator = createStackNavigator(
-  {
-    Login: { screen: Login },
-  },
-  {
-    navigationOptions: ({ navigation }) => ({
-      headerStyle: {
-        backgroundColor: "#5637DD",
-      },
-      headerTintColor: "#fff",
-      headerTitleStyle: {
-        color: "#fff",
-      },
-      headerLeft: (
-        <Icon
-          name="sign-in"
-          type="font-awesome"
-          iconStyle={styles.stackIcon}
-          onPress={() => navigation.toggleDrawer()}
-        />
-      ),
-    }),
-  }
-);
 
 const DirectoryNavigator = createStackNavigator(
   {
@@ -84,7 +58,7 @@ const DirectoryNavigator = createStackNavigator(
   },
   {
     initialRouteName: "Directory",
-    navigationOptions: {
+    defaultNavigationOptions: {
       headerStyle: {
         backgroundColor: "#5637DD",
       },
@@ -101,7 +75,7 @@ const HomeNavigator = createStackNavigator(
     Home: { screen: Home },
   },
   {
-    navigationOptions: ({ navigation }) => ({
+    defaultNavigationOptions: ({ navigation }) => ({
       headerStyle: {
         backgroundColor: "#5637DD",
       },
@@ -126,7 +100,7 @@ const AboutNavigator = createStackNavigator(
     About: { screen: About },
   },
   {
-    navigationOptions: ({ navigation }) => ({
+    defaultNavigationOptions: ({ navigation }) => ({
       headerStyle: {
         backgroundColor: "#5637DD",
       },
@@ -151,7 +125,7 @@ const ContactNavigator = createStackNavigator(
     Contact: { screen: Contact },
   },
   {
-    navigationOptions: ({ navigation }) => ({
+    defaultNavigationOptions: ({ navigation }) => ({
       headerStyle: {
         backgroundColor: "#5637DD",
       },
@@ -176,7 +150,7 @@ const ReservationNavigator = createStackNavigator(
     Reservation: { screen: Reservation },
   },
   {
-    navigationOptions: ({ navigation }) => ({
+    defaultNavigationOptions: ({ navigation }) => ({
       headerStyle: {
         backgroundColor: "#5637DD",
       },
@@ -201,7 +175,7 @@ const FavoritesNavigator = createStackNavigator(
     Favorites: { screen: Favorites },
   },
   {
-    navigationOptions: ({ navigation }) => ({
+    defaultNavigationOptions: ({ navigation }) => ({
       headerStyle: {
         backgroundColor: "#5637DD",
       },
@@ -212,6 +186,31 @@ const FavoritesNavigator = createStackNavigator(
       headerLeft: (
         <Icon
           name="heart"
+          type="font-awesome"
+          iconStyle={styles.stackIcon}
+          onPress={() => navigation.toggleDrawer()}
+        />
+      ),
+    }),
+  }
+);
+
+const LoginNavigator = createStackNavigator(
+  {
+    Login: { screen: Login },
+  },
+  {
+    defaultNavigationOptions: ({ navigation }) => ({
+      headerStyle: {
+        backgroundColor: "#5637DD",
+      },
+      headerTintColor: "#fff",
+      headerTitleStyle: {
+        color: "#fff",
+      },
+      headerLeft: (
+        <Icon
+          name="sign-in"
           type="font-awesome"
           iconStyle={styles.stackIcon}
           onPress={() => navigation.toggleDrawer()}
@@ -274,6 +273,7 @@ const MainNavigator = createDrawerNavigator(
         ),
       },
     },
+
     Reservation: {
       screen: ReservationNavigator,
       navigationOptions: {
@@ -283,6 +283,7 @@ const MainNavigator = createDrawerNavigator(
         ),
       },
     },
+
     Favorites: {
       screen: FavoritesNavigator,
       navigationOptions: {
@@ -292,6 +293,7 @@ const MainNavigator = createDrawerNavigator(
         ),
       },
     },
+
     About: {
       screen: AboutNavigator,
       navigationOptions: {
@@ -328,6 +330,8 @@ const MainNavigator = createDrawerNavigator(
   }
 );
 
+const AppNavigator = createAppContainer(MainNavigator);
+
 class Main extends Component {
   componentDidMount() {
     this.props.fetchCampsites();
@@ -335,23 +339,19 @@ class Main extends Component {
     this.props.fetchPromotions();
     this.props.fetchPartners();
 
-    this.showNetInfo();
-  }
-
-  showNetInfo = async () => {
-    const connectionInfo = await NetInfo.fetch();
-
-    Platform.OS === "ios"
-      ? Alert.alert("Initial Network Connectivity Type:", connectionInfo.type)
-      : ToastAndroid.show(
-          "Initial Network Connectivity Type: " + connectionInfo.type,
-          ToastAndroid.LONG
-        );
+    NetInfo.fetch().then((connectionInfo) => {
+      Platform.OS === "ios"
+        ? Alert.alert("Initial Network Connectivity Type:", connectionInfo.type)
+        : ToastAndroid.show(
+            "Initial Network Connectivity Type: " + connectionInfo.type,
+            ToastAndroid.LONG
+          );
+    });
 
     this.unsubscribeNetInfo = NetInfo.addEventListener((connectionInfo) => {
       this.handleConnectivityChange(connectionInfo);
     });
-  };
+  }
 
   componentWillUnmount() {
     this.unsubscribeNetInfo();
@@ -383,11 +383,10 @@ class Main extends Component {
       <View
         style={{
           flex: 1,
-          paddingTop:
-            Platform.OS === "ios" ? 0 : Expo.Constants.statusBarHeight,
+          paddingTop: Platform.OS === "ios" ? 0 : Constants.statusBarHeight,
         }}
       >
-        <MainNavigator />
+        <AppNavigator />
       </View>
     );
   }
